@@ -11,6 +11,7 @@ public class HEF_HenchmanMovement : MonoBehaviour
     public Transform distance;
     public float t = 0;
     public bool Moving = false;
+    private Vector3 velocity = Vector3.zero;
 
     // Start is called before the first frame update
     void Start()
@@ -22,24 +23,25 @@ public class HEF_HenchmanMovement : MonoBehaviour
     void FixedUpdate()
     {
         t = (Time.time - startTime) / duration;
-        if(Moving){
-            duration = 30.0f;
-            Debug.Log("Henchman is not colliding (SmoothStep) ");
-            henchman.position = new Vector3(Mathf.SmoothStep(henchman.position.x, henchmanPos.position.x, t), Mathf.SmoothStep(henchman.position.y, henchmanPos.position.y, t), Mathf.SmoothStep(henchman.position.z, henchmanPos.position.z, t));
-        }
+        henchman.position =  Vector3.SmoothDamp(henchman.position, henchmanPos.position, ref velocity, 0.3f);
+        // if(Moving){
+        //     duration = 30.0f;
+        //     Debug.Log("Henchman is not colliding (SmoothStep) ");
+        //     henchman.position = new Vector3(Mathf.Slerp(henchman.position.x, henchmanPos.position.x, t), Mathf.SmoothStep(henchman.position.y, henchmanPos.position.y, t), Mathf.SmoothStep(henchman.position.z, henchmanPos.position.z, t));
+        // }
 
     }
 
     void OnTriggerEnter(Collider other){
-        if(other.gameObject.CompareTag("Henchman")){
-            Debug.Log("Henchman is in collider (MoveTowards) ");
-            Moving = false;
-            duration = 1000.0f;
-            henchman.position = new Vector3(Mathf.MoveTowards(henchman.position.x, henchmanPos.position.x, t), Mathf.MoveTowards(henchman.position.y, henchmanPos.position.y, t), Mathf.MoveTowards(henchman.position.z, henchmanPos.position.z, t));     
-        }
-        else{
-            Moving = true;
-        }
+        // if(other.gameObject.CompareTag("Henchman")){
+        //     Debug.Log("Henchman is in collider (MoveTowards) ");
+        //     Moving = false;
+        //     duration = 1000.0f;
+        //     henchman.position = new Vector3(Mathf.MoveTowards(henchman.position.x, henchmanPos.position.x, t), Mathf.MoveTowards(henchman.position.y, henchmanPos.position.y, t), Mathf.MoveTowards(henchman.position.z, henchmanPos.position.z, t));     
+        // }
+        // else{
+        //     Moving = true;
+        // }
     }
         
 }
