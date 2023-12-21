@@ -1,10 +1,14 @@
 using System.Collections;
 using System.Collections.Generic;
 using UnityEngine;
-
+using UnityEngine.UI;
 
 public class Fist : MonoBehaviour
 {
+    [SerializeField] Image[] crosshair;
+    
+    private HEF_EnemyScript wasd = null;
+
     [SerializeField] GameObject orientation;
     [Header("CameraFists")]
     public GameObject camFist;
@@ -41,8 +45,7 @@ public class Fist : MonoBehaviour
     public float radius = 5.0F;
     public float power = 1000.0F;
     void Start()
-    {
-
+    { 
         ShootFist.transform.position = TempShootFistPos;
         distance= speed*flyingTime;
     }
@@ -50,6 +53,7 @@ public class Fist : MonoBehaviour
     // Update is called once per frame
     void FixedUpdate()
     {
+        CrossHairControl();
         StateChecker();
         //get imput, move shoot fist to camera fist & disable camFist mesh, add force to shoot fist
         if(Input.GetAxis(AxisToShoot)!=0&&reloaded&&HandisClipping==false){
@@ -82,6 +86,7 @@ public class Fist : MonoBehaviour
         state = FistState.reloaded;
     }
     void OnCollisionEnter(Collision other){
+        DoDamage(other);
         DropTheFist();
         ShootFistRB.velocity = Vector3.ClampMagnitude(ShootFistRB.velocity, ShootFistRB.velocity.magnitude*.5f);
     }
@@ -99,8 +104,6 @@ public class Fist : MonoBehaviour
                     transform.LookAt(hit.point);
                     ShootFistRB.AddForce(ShootFist.transform.forward * speed,ForceMode.Impulse);
                     state = FistState.flying;
-                    Debug.Log("Raycast Hit: "+ hit.collider.gameObject.name);
-                    
                 }
                 //ShootFist.transform.forward = hit.point - ShootFist.transform.position;
             } else{
@@ -113,16 +116,12 @@ public class Fist : MonoBehaviour
     }
     void StateChecker(){//Controls timers depending on state_____//when the state is reloaded it teleports it back
         //if the fist hit something start a timer for dropTime
-        Debug.Log(dropTime);
         if (state==FistState.flying || state == FistState.homing){
             if(flyingCounter<=0){
             DropTheFist();
             }
             else
             flyingCounter-=Time.deltaTime;
-
-
-            
         }
         if (state==FistState.falling){
             if(dropCounter<=0){
@@ -141,5 +140,38 @@ public class Fist : MonoBehaviour
             ShootFistRB.velocity=new Vector3(0,0,0);
             ShootFistRB.AddForce(ShootFist.transform.forward * speed,ForceMode.Impulse);
         }
+    }
+    void CrossHairControl(){ 
+        RaycastHit hit;
+           Physics.Raycast(orientation.transform.position,  orientation.transform.forward*distance, out hit);
+           if(hit.collider != null)
+            {   
+                if(hit.collider.gameObject.CompareTag(enemyTag)){
+                    for (int i=0; i<crosshair.Length;i++){
+                        crosshair[i].color = new Color(1f,0f,0f,1f);
+                        }
+                    
+                }
+                else{
+                    for (int i=0; i<crosshair.Length;i++){
+                        crosshair[i].color = new Color(1f,1f,1f,1f);
+                    }
+                }
+
+            } else{
+                for (int i=0; i<crosshair.Length;i++){
+                        crosshair[i].color = new Color(1f,1f,1f,1f);
+                }
+            }
+    }
+    void DoDamage(Collision other){
+        
+        if (other.gameObject.CompareTag(enemyTag))
+            wasd = other.gameObject.GetComponent<HEF_EnemyScript>();
+            if (wasd != null){
+                wasd.EnemyHealth-=1;
+                wasd=null;
+            }
+            
     }
 }
