@@ -10,21 +10,23 @@ public class Move : MonoBehaviour
     float targetFov;
     
     private float moveSpeed;
-    public float walkSpeed;
-    public float sprintSpeed;
+    [SerializeField] float walkSpeed;
+    [SerializeField] float sprintSpeed;
 
-    public float jumpForce;
-    public float jumpCooldown;
-    public float airMultiplier;
+    [SerializeField] float jumpForce;
+    [SerializeField] float jumpCooldown;
+    [SerializeField] float airMultiplier;
     bool readyToJump;
+    [SerializeField] float fallMultiplier=2.5f;
+    [SerializeField] float lowJumpMultiplier=2f;
 
-    public Transform orientation;
-    public float groundDrag;
-    public float airDrag;
+    [SerializeField] Transform orientation;
+    [SerializeField] float groundDrag;
+    [SerializeField] float airDrag;
 
-    public float playerHeight;
-    public LayerMask whatIsGround;
-    public bool isGrounded;
+    float playerHeight=2;
+    [SerializeField] LayerMask whatIsGround;
+    [SerializeField] bool isGrounded;
 
     public KeyCode jumpKey = KeyCode.Space;
     public KeyCode sprintKey = KeyCode.LeftShift;
@@ -74,6 +76,7 @@ public class Move : MonoBehaviour
         MovePlayer();
         MyInput();
         SpeedControl();
+        BetterJump();
     }
     private void MyInput(){
         horizontalInput = Input.GetAxis("Horizontal");
@@ -116,13 +119,12 @@ public class Move : MonoBehaviour
     }
     private void StateHandler()
     {   
-        Vector3 totalVel = new Vector3(rb.velocity.x,0f, rb.velocity.z);
+        Vector3 totalVel = new Vector3(rb.velocity.x,0, rb.velocity.z);
         //sprinting
         if(isGrounded && Input.GetKey(sprintKey)){
             state = MovementState.sprinting;
             moveSpeed = sprintSpeed;
             targetFov = fovMinimum*(1f+((totalVel.magnitude-walkSpeed)/fovSpeedRatio));
-            
         }
         else if(isGrounded){
             state = MovementState.walking;
@@ -146,5 +148,12 @@ public class Move : MonoBehaviour
     }
     private void ResetJump(){
         readyToJump=true;
+    }
+    private void BetterJump(){
+        if (rb.velocity.y<0){
+            rb.velocity += Vector3.up * Physics.gravity.y * (fallMultiplier-1) * Time.deltaTime;
+        } else if (rb.velocity.y > 0 && !Input.GetKey(jumpKey)){
+            rb.velocity += Vector3.up * Physics.gravity.y * (lowJumpMultiplier -1) * Time.deltaTime;
+        }
     }
 }
