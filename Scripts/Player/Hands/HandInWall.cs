@@ -20,16 +20,20 @@ public class HandInWall : MonoBehaviour
     }
     void OnTriggerStay(Collider other){
         //Debug.Log("hand is Colliding with: " + other.gameObject.name);
+        if (!other.CompareTag("Enemy"))
         FistScript.HandisClipping=true;
     }
     void OnCollisionStay(Collision other){
         //Debug.Log("hand is Colliding with: " + other.gameObject.name);
+        if (!other.gameObject.CompareTag("Enemy"))
         FistScript.HandisClipping=true;
     }
     void OnTriggerExit(Collider other){
+        if (!other.CompareTag("Enemy"))
         FistScript.HandisClipping=false;
     }
     void OnCollisionExit(Collision other){
+        if (!other.gameObject.CompareTag("Enemy"))
         FistScript.HandisClipping=false;
     }
 }
