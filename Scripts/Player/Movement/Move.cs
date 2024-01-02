@@ -27,6 +27,8 @@ public class Move : MonoBehaviour
     float playerHeight=2;
     [SerializeField] LayerMask whatIsGround;
     [SerializeField] bool isGrounded;
+    [SerializeField] float groundCastRad;
+    RaycastHit hit;
 
     public KeyCode jumpKey = KeyCode.Space;
     public KeyCode sprintKey = KeyCode.LeftShift;
@@ -56,7 +58,9 @@ public class Move : MonoBehaviour
 
     // Update is called once per frame
     private void Update(){
-    isGrounded = Physics.Raycast(transform.position, Vector3.down, playerHeight*0.5f + 0.2f, whatIsGround);
+        
+        isGrounded = Physics.SphereCast(transform.position,groundCastRad,Vector3.down,out hit, playerHeight/2, whatIsGround);
+    //isGrounded = Physics.Raycast(transform.position, Vector3.down, playerHeight*0.5f + 0.2f, whatIsGround);
     //Debug.DrawRay(transform.position, new Vector3(0f,-1f*playerHeight*0.5f-0.2f,0f),Color.blue,10);
         
         
@@ -156,4 +160,5 @@ public class Move : MonoBehaviour
             rb.velocity += Vector3.up * Physics.gravity.y * (lowJumpMultiplier -1) * Time.deltaTime;
         }
     }
+
 }
