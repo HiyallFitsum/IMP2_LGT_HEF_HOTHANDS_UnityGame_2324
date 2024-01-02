@@ -9,7 +9,8 @@ public class Fist : MonoBehaviour
     
     private HEF_EnemyScript wasd = null;
 
-    [SerializeField] GameObject orientation;
+    [Header("MainCamera")]
+    [SerializeField] GameObject mainCamera;
     [Header("CameraFists")]
     public GameObject camFist;
     [SerializeField] MeshRenderer CamFistRenderer;
@@ -42,7 +43,6 @@ public class Fist : MonoBehaviour
     }
     // Start is called before the first frame update
     
-    public float radius = 5.0F;
     public float power = 1000.0F;
     void Start()
     { 
@@ -86,13 +86,14 @@ public class Fist : MonoBehaviour
         state = FistState.reloaded;
     }
     void OnCollisionEnter(Collision other){
-        DoDamage(other);
+        if((state==FistState.flying || state==FistState.homing))
+            DoDamage(other);
         DropTheFist();
         ShootFistRB.velocity = Vector3.ClampMagnitude(ShootFistRB.velocity, ShootFistRB.velocity.magnitude*.5f);
     }
     void Shoot(){
         RaycastHit hit;
-           Physics.Raycast(orientation.transform.position,  orientation.transform.forward*distance, out hit);
+           Physics.Raycast(mainCamera.transform.position,  mainCamera.transform.forward*distance, out hit);
            //Debug.Log("Raycast Shot");
             if(hit.collider != null)
             {   
@@ -143,7 +144,7 @@ public class Fist : MonoBehaviour
     }
     void CrossHairControl(){ 
         RaycastHit hit;
-           Physics.Raycast(orientation.transform.position,  orientation.transform.forward*distance, out hit);
+           Physics.Raycast(mainCamera.transform.position,  mainCamera.transform.forward*distance, out hit);
            if(hit.collider != null)
             {   
                 if(hit.collider.gameObject.CompareTag(enemyTag)){
@@ -165,13 +166,11 @@ public class Fist : MonoBehaviour
             }
     }
     void DoDamage(Collision other){
-        
         if (other.gameObject.CompareTag(enemyTag))
             wasd = other.gameObject.GetComponent<HEF_EnemyScript>();
             if (wasd != null){
                 wasd.EnemyHealth-=1;
                 wasd=null;
-            }
-            
+            } 
     }
 }
