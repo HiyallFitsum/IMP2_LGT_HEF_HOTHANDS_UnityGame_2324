@@ -2,12 +2,14 @@ using System.Collections;
 using System.Collections.Generic;
 using UnityEngine;
 using UnityEngine.UI;
+using UnityEngine.InputSystem;
 
 public class Fist : MonoBehaviour
 {
     [SerializeField] Image[] crosshair;
     
-    private HEF_EnemyScript wasd = null;
+    private HEF_EnemyScript enemyScript = null;
+    private LGT_TargetScript targetScript = null;
 
     [Header("MainCamera")]
     [SerializeField] GameObject mainCamera;
@@ -32,7 +34,13 @@ public class Fist : MonoBehaviour
     public float flyingTime;//time until fist auto reloads after firing- so it doesnt fly forever
     float flyingCounter=0;
     float dropCounter=0;
+
+    [SerializeField] Rigidbody playerRb;
+    public float explosionRadius = 5.0F;
+    public float explosionPower = 10.0F;
     
+    [SerializeField] GameObject particles;
+    [SerializeField] GameObject particlesTwo;
 
     public FistState state;
     public enum FistState{
@@ -44,10 +52,22 @@ public class Fist : MonoBehaviour
     // Start is called before the first frame update
     
     public float power = 1000.0F;
+    private float timer = 0.0f;
+
+    public bool shootingLeft = false;
+    public bool shootingRight = false;
+
+    //private GameObject audioManager;
+    HEF_AudioManager audioManager; 
+
+    private void Awake(){
+        audioManager = GameObject.FindGameObjectWithTag("Audio").GetComponent<HEF_AudioManager>();
+    }
+
     void Start()
     { 
         ShootFist.transform.position = TempShootFistPos;
-        distance= speed*flyingTime;
+        distance= (speed*flyingTime)*1.5f;
     }
 
     // Update is called once per frame
@@ -56,10 +76,18 @@ public class Fist : MonoBehaviour
         CrossHairControl();
         StateChecker();
         //get imput, move shoot fist to camera fist & disable camFist mesh, add force to shoot fist
-        if(Input.GetAxis(AxisToShoot)!=0&&reloaded&&HandisClipping==false){
-            ReplaceFist();
-            Shoot();
-            reloaded=false;//the fist is reloaded when it is teleported away
+        if(AxisToShoot == "Fire1"){
+            if(shootingLeft&&reloaded&&HandisClipping==false){
+                ReplaceFist();
+                Shoot();
+                reloaded=false;//the fist is reloaded when it is teleported away
+            }
+        }else if(AxisToShoot == "Fire2"){
+            if(shootingRight&&reloaded&&HandisClipping==false){
+                ReplaceFist();
+                Shoot();
+                reloaded=false;//the fist is reloaded when it is teleported away
+            }
         }
     }
     //void ReplaceFist(Gam)
@@ -90,11 +118,14 @@ public class Fist : MonoBehaviour
             DoDamage(other);
         DropTheFist();
         ShootFistRB.velocity = Vector3.ClampMagnitude(ShootFistRB.velocity, ShootFistRB.velocity.magnitude*.5f);
+        audioManager.PlaySFX(audioManager.FistExplosion);
     }
     void Shoot(){
+        //audioManager.PlaySFX(audioManager.FistShoot);
+
         RaycastHit hit;
-           Physics.Raycast(mainCamera.transform.position,  mainCamera.transform.forward*distance, out hit);
-           //Debug.Log("Raycast Shot");
+           Physics.Raycast(mainCamera.transform.position,  mainCamera.transform.forward, out hit, distance);
+           
             if(hit.collider != null)
             {   
                 if(hit.collider.gameObject.CompareTag(enemyTag)){
@@ -111,7 +142,7 @@ public class Fist : MonoBehaviour
                ShootFistRB.velocity= new Vector3(0f,0f,0f);
                 ShootFistRB.AddForce(ShootFist.transform.forward * speed,ForceMode.Impulse);
                 state = FistState.flying;
-            }
+            }   
             flyingCounter= flyingTime;//starts auto reload
             
     }
@@ -144,7 +175,7 @@ public class Fist : MonoBehaviour
     }
     void CrossHairControl(){ 
         RaycastHit hit;
-           Physics.Raycast(mainCamera.transform.position,  mainCamera.transform.forward*distance, out hit);
+           Physics.Raycast(mainCamera.transform.position, mainCamera.transform.forward, out hit, distance);
            if(hit.collider != null)
             {   
                 if(hit.collider.gameObject.CompareTag(enemyTag)){
@@ -152,6 +183,10 @@ public class Fist : MonoBehaviour
                         crosshair[i].color = new Color(1f,0f,0f,1f);
                         }
                     
+                }else if(hit.collider.gameObject.CompareTag("Bullet")){
+                    for (int i=0; i<crosshair.Length;i++){
+                        crosshair[i].color = new Color(0.192f,0.875f,1f,1f);
+                        }
                 }
                 else{
                     for (int i=0; i<crosshair.Length;i++){
@@ -167,10 +202,50 @@ public class Fist : MonoBehaviour
     }
     void DoDamage(Collision other){
         if (other.gameObject.CompareTag(enemyTag))
-            wasd = other.gameObject.GetComponent<HEF_EnemyScript>();
-            if (wasd != null){
-                wasd.EnemyHealth-=1;
-                wasd=null;
-            } 
+            enemyScript = other.gameObject.GetComponent<HEF_EnemyScript>();
+            if(enemyScript == null)
+            {
+                targetScript = other.gameObject.GetComponent<LGT_TargetScript>();
+                if(targetScript!= null){
+                    targetScript.EnemyHealth-=1;
+                    targetScript=null;
+                }
+            } else if(enemyScript != null){
+                enemyScript.EnemyHealth-=1;
+                enemyScript=null;
+            }   
+        if(other.gameObject.CompareTag("Bullet"))
+        {
+            if((state==FistState.flying || state==FistState.homing)){
+                Destroy(other.gameObject);
+            }
+            Vector3 explosionPos = transform.position;
+            playerRb.AddExplosionForce(explosionPower, explosionPos, explosionRadius, 3.0F);
+            Instantiate(particlesTwo, explosionPos, transform.rotation);
+        }else{
+            Vector3 explosionPos = transform.position;
+            playerRb.AddExplosionForce(explosionPower, explosionPos, explosionRadius, 3.0F);
+            Instantiate(particles, explosionPos, transform.rotation);
+        }
+ 
     }
+
+    public void OnShootLeftFist(InputAction.CallbackContext ctx){
+        if(ctx.phase == InputActionPhase.Started){
+            shootingLeft = true;
+        }else if(ctx.phase == InputActionPhase.Canceled){
+            shootingLeft = false;
+        }
+    }
+
+    public void OnShootRightFist(InputAction.CallbackContext ctx){
+        if(ctx.phase == InputActionPhase.Started){
+            shootingRight = true;
+        }else if(ctx.phase == InputActionPhase.Canceled){
+            shootingRight = false;
+        }
+    }
+
+
+    
 }
